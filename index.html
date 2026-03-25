@@ -93,5 +93,165 @@
     </div>
 </div>
 
+<script>
+    let customersData = JSON.parse(localStorage.getItem('svp_finance_data')) || {};
+    let currentEmployeeHp = "";
+    let employeeLocation = "Location not captured";
+
+    function showSection(sectionId) {
+        document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+        document.getElementById(sectionId).classList.add('active');
+    }
+
+    function handleLogin() {
+        let hp = document.getElementById('loginHpNumber').value.trim();
+        if(hp === "") {
+            alert("Dhayachesi HP Number enter cheyyandi");
+            return;
+        }
+
+        if(hp === "00001") {
+            showSection('adminSection');
+            showAdminView('verify');
+        } else {
+            if(customersData[hp]) {
+                currentEmployeeHp = hp;
+                showSection('employeeSection');
+                displayEmployeeData(hp);
+                captureLocation(); 
+            } else {
+                alert("Ee HP Number tho data ledhu. Admin mundu 'Customer Verify' lo data add cheyyali.");
+            }
+        }
+    }
+
+    function logout() {
+        document.getElementById('loginHpNumber').value = "";
+        showSection('loginSection');
+    }
+
+    function showAdminView(view) {
+        if(view === 'verify') {
+            document.getElementById('customerVerifyDiv').style.display = 'block';
+            document.getElementById('reportsDiv').style.display = 'none';
+        } else {
+            document.getElementById('customerVerifyDiv').style.display = 'none';
+            document.getElementById('reportsDiv').style.display = 'block';
+            generateReports();
+        }
+    }
+
+    function submitAdminData() {
+        let hp = document.getElementById('c_hp').value.trim();
+        if(!hp) { alert("HP Number compulsory ga ivvali!"); return; }
+
+        customersData[hp] = {
+            name: document.getElementById('c_name').value,
+            hpNumber: hp,
+            vehicleNumber: document.getElementById('c_vNum').value,
+            vehicleName: document.getElementById('c_vName').value,
+            vehicleYear: document.getElementById('c_vYear').value,
+            emiAmount: document.getElementById('c_emiAmt').value,
+            pendingEmis: document.getElementById('c_pendingEmis').value,
+            pendingAmount: document.getElementById('c_pendingAmt').value,
+            importantNote: document.getElementById('c_important').value,
+            settlementWanted: "Pending",
+            expectedAmount: "-",
+            location: "-"
+        };
+
+        localStorage.setItem('svp_finance_data', JSON.stringify(customersData));
+        alert("Customer details submit ayyayi! Ippudu employee ade HP number tho login ayyi chudochu.");
+
+        document.querySelectorAll('#customerVerifyDiv input, #customerVerifyDiv textarea').forEach(input => input.value = '');
+    }
+
+    function generateReports() {
+        let html = `<table><tr>
+            <th>HP No</th><th>Name</th><th>Vehicle</th><th>Pending Amt</th><th style="color:red;">Important</th><th>Settlement?</th><th>Expected</th><th>Location</th>
+        </tr>`;
+        for(let key in customersData) {
+            let c = customersData[key];
+            html += `<tr>
+                <td>${c.hpNumber}</td>
+                <td>${c.name}</td>
+                <td>${c.vehicleName} (${c.vehicleNumber})</td>
+                <td>₹${c.pendingAmount}</td>
+                <td style="color:red; font-weight:bold;">${c.importantNote}</td>
+                <td>${c.settlementWanted}</td>
+                <td>${c.expectedAmount}</td>
+                <td><a href="http://www.google.com/maps?q=${c.location}" target="_blank">View Map</a></td>
+            </tr>`;
+        }
+        html += `</table>`;
+        document.getElementById('reportsContainer').innerHTML = html;
+    }
+
+    function displayEmployeeData(hp) {
+        let c = customersData[hp];
+        let html = `
+            <p><strong>Name:</strong> ${c.name}</p>
+            <p><strong>HP Number:</strong> ${c.hpNumber}</p>
+            <p><strong>Vehicle:</strong> ${c.vehicleName} - ${c.vehicleNumber} (Year: ${c.vehicleYear})</p>
+            <p><strong>EMI Amount:</strong> ₹${c.emiAmount}</p>
+            <p><strong>Pending EMIs:</strong> ${c.pendingEmis}</p>
+            <p><strong>Pending Amount:</strong> ₹${c.pendingAmount}</p>
+            <p class="important-label">🚨 Important: ${c.importantNote}</p>
+        `;
+        document.getElementById('employeeDataDisplay').innerHTML = html;
+        document.getElementById('settlementOption').value = "";
+        document.getElementById('e_expectedAmt').value = "";
+        document.getElementById('expectedAmountDiv').style.display = 'none';
+    }
+
+    function captureLocation() {
+        let locStatus = document.getElementById('locationStatus');
+        locStatus.innerText = "Capturing Location...";
+        locStatus.style.color = "blue";
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                employeeLocation = position.coords.latitude + "," + position.coords.longitude;
+                locStatus.innerText = "Location Captured Successfully (Ready to submit)";
+                locStatus.style.color = "green";
+            }, function(error) {
+                employeeLocation = "Location Capture Failed";
+                locStatus.innerText = "Location Error: GPS on cheyyandi.";
+                locStatus.style.color = "red";
+            });
+        } else {
+            employeeLocation = "Not Supported";
+            locStatus.innerText = "Location feature ee phone lo pani cheyyatledu.";
+        }
+    }
+
+    function toggleSettlementAmount() {
+        let opt = document.getElementById('settlementOption').value;
+        if(opt === 'Yes') {
+            document.getElementById('expectedAmountDiv').style.display = 'block';
+        } else {
+            document.getElementById('expectedAmountDiv').style.display = 'none';
+        }
+    }
+
+    function submitEmployeeData() {
+        let settlement = document.getElementById('settlementOption').value;
+        if(!settlement) {
+            alert("Dhayachesi Settlement option (Yes/No) select cheyyandi.");
+            return;
+        }
+
+        let expected = settlement === 'Yes' ? document.getElementById('e_expectedAmt').value : "Not Applicable";
+
+        customersData[currentEmployeeHp].settlementWanted = settlement;
+        customersData[currentEmployeeHp].expectedAmount = expected;
+        customersData[currentEmployeeHp].location = employeeLocation;
+
+        localStorage.setItem('svp_finance_data', JSON.stringify(customersData));
+        alert("Visit details Admin reports loki submit ayyayi!");
+        logout();
+    }
+</script>
+
 </body>
 </html>
