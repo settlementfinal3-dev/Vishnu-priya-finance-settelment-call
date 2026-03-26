@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sri Vishnu Priya Finance</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #1a1a1a; font-size: 2.2em; text-transform: uppercase; border-bottom: 2px solid #ccc; padding-bottom: 10px; }
+        .section { display: none; }
+        .active { display: block; }
+        input, button, select, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
+        button { background-color: #28a745; color: white; border: none; cursor: pointer; font-weight: bold; }
+        button:hover { background-color: #218838; }
+        .important-label { color: red; font-weight: bold; font-size: 1.1em; }
+        .important-input { border: 2px solid red; background-color: #fff8f8; }
+        .card { background: #f9f9f9; padding: 15px; margin-bottom: 15px; border-left: 5px solid #007bff; border-radius: 4px; line-height: 1.6; }
+        .btn-nav { background-color: #007bff; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #007bff; color: white; }
+        .logout-btn { background-color: #dc3545; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Sri Vishnu Priya Finance</h1>
+
+    <div id="loginSection" class="section active">
+        <h3>Login</h3>
+        <label>Enter HP Number:</label>
+        <input type="text" id="loginHpNumber" placeholder="Enter HP Number">
+        <button onclick="handleLogin()">Login</button>
+    </div>
+
+    <div id="adminSection" class="section">
+        <h3>Admin Dashboard</h3>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn-nav" onclick="showAdminView('verify')">Customer Verify</button>
+            <button class="btn-nav" onclick="showAdminView('reports')">Reports</button>
+        </div>
+        
+        <div id="customerVerifyDiv">
+            <h4>Customer Verify (Add Data)</h4>
+            <input type="text" id="c_name" placeholder="Customer Name">
+            <input type="text" id="c_hp" placeholder="HP Number (Assign to Employee)">
+            <input type="text" id="c_vNum" placeholder="Vehicle Number">
+            <input type="text" id="c_vName" placeholder="Vehicle Name">
+            <input type="text" id="c_vYear" placeholder="Vehicle Registration Year">
+            <input type="number" id="c_emiAmt" placeholder="EMI Amount">
+            <input type="number" id="c_pendingEmis" placeholder="Pending EMIs">
+            <input type="number" id="c_pendingAmt" placeholder="Pending Amount">
+
+            <label class="important-label">Important:</label>
+            <textarea id="c_important" class="important-input" rows="3" placeholder="Type important notes here..."></textarea>
+
+            <button onclick="submitAdminData()">Submit Data</button>
+        </div>
+
+        <div id="reportsDiv" style="display:none;">
+            <h4>Admin Reports</h4>
+            <div id="reportsContainer" style="overflow-x: auto;">Loading reports...</div>
+        </div>
+        
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+
+    <div id="employeeSection" class="section">
+        <h3>Customer Details</h3>
+        <div id="employeeDataDisplay" class="card"></div>
+
+        <div id="locationStatus" style="color: blue; margin-bottom: 15px; font-weight: bold;">Capturing Location...</div>
+
+        <div style="background: #e9ecef; padding: 15px; border-radius: 5px;">
+            <label style="font-weight: bold;">Meeru settlement chesukovali anukuntunara?</label>
+            <select id="settlementOption" onchange="toggleSettlementAmount()">
+                <option value="">Select Option</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+
+            <div id="expectedAmountDiv" style="display:none; margin-top: 10px;">
+                <label style="font-weight: bold;">Entha expect chesthunaru?</label>
+                <input type="number" id="e_expectedAmt" placeholder="Enter Expected Amount">
+            </div>
+
+            <button onclick="submitEmployeeData()" style="margin-top: 15px;">Submit Visit Details</button>
+        </div>
+        
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+    import { getDatabase, ref, set, get, child, update } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBv_XDEWTVp6vUZIMppxaj-0TuIktvLzIE",
+        authDomain: "siva-sai-finance-d9989.firebaseapp.com",
+        databaseURL: "https://siva-sai-finance-d9989-default-rtdb.firebaseio.com",
+        projectId: "siva-sai-finance-d9989",
+        storageBucket: "siva-sai-finance-d9989.firebasestorage.app",
+        messagingSenderId: "483773730142",
+        appId: "1:483773730142:web:87b807ec0da903763ed3cf"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    let currentEmployeeHp = "";
+    let employeeLocation = "Location not captured";
+    let currentCustomerData = null; // Temporary storage for employee view
+
+    window.showSection = function(sectionId) {
+        document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+        document.getElementById(sectionId).classList.add('active');
+    }
+
+    window.handleLogin = function() {
+        let hp = document.getElementById('loginHpNumber').value.trim().toUpperCase();
+        if(hp === "") {
+            alert("Dhayachesi HP Number enter cheyyandi");
+            return;
+        }
+
+        if(hp === "00001") {
+            showSection('adminSection');
+            showAdminView('verify');
+        } else {
+            // Check Firebase for HP Number
+            const dbRef = ref(db);
+            get(child(dbRef, `customers/${hp}`)).then((snapshot) => {
+                if (snapshot.exists()) {
+                    currentEmployeeHp = hp;
+                    currentCustomerData = snapshot.val();
+                    showSection('employeeSection');
+                    displayEmployeeData(currentCustomerData);
+                    captureLocation(); 
+                } else {
+                    alert("Ee HP Number tho data ledhu. Admin mundu 'Customer Verify' lo data add cheyyali.");
+                }
+            }).catch((error) => {
+                console.error(error);
+                alert("Database error vachindi. Internet check cheskondi.");
+            });
+        }
+    }
+
+    window.logout = function() {
+        document.getElementById('loginHpNumber').value = "";
+        currentEmployeeHp = "";
+        currentCustomerData = null;
+        showSection('loginSection');
+    }
+
+    window.showAdminView = function(view) {
+        if(view === 'verify') {
+            document.getElementById('customerVerifyDiv').style.display = 'block';
+            document.getElementById('reportsDiv').style.display = 'none';
+        } else {
+            document.getElementById('customerVerifyDiv').style.display = 'none';
+            document.getElementById('reportsDiv').style.display = 'block';
+            generateReports();
+        }
+    }
+
+    window.submitAdminData = function() {
+        let hp = document.getElementById('c_hp').value.trim().toUpperCase();
+        if(!hp) { alert("HP Number compulsory ga ivvali!"); return; }
+
+        let customerObj = {
+            name: document.getElementById('c_name').value,
+            hpNumber: hp,
+            vehicleNumber: document.getElementById('c_vNum').value,
+            vehicleName: document.getElementById('c_vName').value,
+            vehicleYear: document.getElementById('c_vYear').value,
+            emiAmount: document.getElementById('c_emiAmt').value,
+            pendingEmis: document.getElementById('c_pendingEmis').value,
+            pendingAmount: document.getElementById('c_pendingAmt').value,
+            importantNote: document.getElementById('c_important').value,
+            settlementWanted: "Pending",
+            expectedAmount: "-",
+            location: "-"
+        };
+
+        // Save to Firebase
+        set(ref(db, 'customers/' + hp), customerObj)
+        .then(() => {
+            alert("Customer details submit ayyayi! Ippudu employee ade HP number tho login ayyi chudochu.");
+            document.querySelectorAll('#customerVerifyDiv input, #customerVerifyDiv textarea').forEach(input => input.value = '');
+        })
+        .catch((error) => {
+            alert("Data submit avvaledu. Error: " + error.message);
+        });
+    }
+
+    window.generateReports = function() {
+        const dbRef = ref(db);
+        get(child(dbRef, `customers`)).then((snapshot) => {
+            if (snapshot.exists()) {
+                let customersData = snapshot.val();
+                let html = `<table><tr>
+                    <th>HP No</th><th>Name</th><th>Vehicle</th><th>Pending Amt</th><th style="color:red;">Important</th><th>Settlement?</th><th>Expected</th><th>Location</th>
+                </tr>`;
+                
+                for(let key in customersData) {
+                    let c = customersData[key];
+                    let mapLink = c.location !== "-" ? `https://maps.google.com/?q=${c.location}` : "#";
+                    let mapText = c.location !== "-" ? "View Map" : "No Location";
+
+                    html += `<tr>
+                        <td>${c.hpNumber}</td>
+                        <td>${c.name}</td>
+                        <td>${c.vehicleName} <br> (${c.vehicleNumber})</td>
+                        <td>₹${c.pendingAmount}</td>
+                        <td style="color:red; font-weight:bold;">${c.importantNote}</td>
+                        <td>${c.settlementWanted}</td>
+                        <td>${c.expectedAmount}</td>
+                        <td><a href="${mapLink}" target="_blank">${mapText}</a></td>
+                    </tr>`;
+                }
+                html += `</table>`;
+                document.getElementById('reportsContainer').innerHTML = html;
+            } else {
+                document.getElementById('reportsContainer').innerHTML = "<p>Data emi ledu.</p>";
+            }
+        }).catch((error) => {
+            document.getElementById('reportsContainer').innerHTML = "<p>Error loading reports.</p>";
+        });
+    }
+
+    window.displayEmployeeData = function(c) {
+        let html = `
+            <p><strong>Name:</strong> ${c.name}</p>
+            <p><strong>HP Number:</strong> ${c.hpNumber}</p>
+            <p><strong>Vehicle:</strong> ${c.vehicleName} - ${c.vehicleNumber} (Year: ${c.vehicleYear})</p>
+            <p><strong>EMI Amount:</strong> ₹${c.emiAmount}</p>
+            <p><strong>Pending EMIs:</strong> ${c.pendingEmis}</p>
+            <p><strong>Pending Amount:</strong> ₹${c.pendingAmount}</p>
+            <p class="important-label">🚨 Important: ${c.importantNote}</p>
+        `;
+        document.getElementById('employeeDataDisplay').innerHTML = html;
+        document.getElementById('settlementOption').value = "";
+        document.getElementById('e_expectedAmt').value = "";
+        document.getElementById('expectedAmountDiv').style.display = 'none';
+    }
+
+    window.captureLocation = function() {
+        let locStatus = document.getElementById('locationStatus');
+        locStatus.innerText = "Capturing Location...";
+        locStatus.style.color = "blue";
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                employeeLocation = position.coords.latitude + "," + position.coords.longitude;
+                locStatus.innerText = "Captured Successfully (Ready to submit)";
+                locStatus.style.color = "green";
+            }, function(error) {
+                employeeLocation = "Location Capture Failed";
+                locStatus.innerText = "Location Error: GPS on cheyyandi.";
+                locStatus.style.color = "red";
+            });
+        } else {
+            employeeLocation = "Not Supported";
+            locStatus.innerText = "Location feature ee phone lo pani cheyyatledu.";
+        }
+    }
+
+    window.toggleSettlementAmount = function() {
+        let opt = document.getElementById('settlementOption').value;
+        if(opt === 'Yes') {
+            document.getElementById('expectedAmountDiv').style.display = 'block';
+        } else {
+            document.getElementById('expectedAmountDiv').style.display = 'none';
+        }
+    }
+
+    window.submitEmployeeData = function() {
+        let settlement = document.getElementById('settlementOption').value;
+        if(!settlement) {
+            alert("Dhayachesi Settlement option (Yes/No) select cheyyandi.");
+            return;
+        }
+
+        let expected = settlement === 'Yes' ? document.getElementById('e_expectedAmt').value : "Not Applicable";
+
+        // Update ONLY the specific employee's visit details in Firebase
+        const updates = {};
+        updates['/customers/' + currentEmployeeHp + '/settlementWanted'] = settlement;
+        updates['/customers/' + currentEmployeeHp + '/expectedAmount'] = expected;
+        updates['/customers/' + currentEmployeeHp + '/location'] = employeeLocation;
+
+        update(ref(db), updates)
+        .then(() => {
+            alert("Visit details Admin reports loki submit ayyayi!");
+            logout();
+        })
+        .catch((error) => {
+            alert("Submit avvaledu. Error: " + error.message);
+        });
+    }
+</script>
+
+</body>
+</html>
