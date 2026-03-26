@@ -22,6 +22,9 @@
         th { background-color: #007bff; color: white; }
         .logout-btn { background-color: #dc3545; margin-top: 20px; }
     </style>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
 <body>
 
@@ -61,7 +64,7 @@
 
         <div id="reportsDiv" style="display:none;">
             <h4>Admin Reports</h4>
-            <div id="reportsContainer" style="overflow-x: auto;"></div>
+            <div id="reportsContainer" style="overflow-x: auto;">Loading reports...</div>
         </div>
         
         <button class="logout-btn" onclick="logout()">Logout</button>
@@ -94,9 +97,22 @@
 </div>
 
 <script>
-    let customersData = JSON.parse(localStorage.getItem('svp_finance_data')) || {};
+    // 1. Initialize Firebase
+    const firebaseConfig = {
+        apiKey: "AIzaSyBv_XDEWTVp6vUZIMppxaj-0TuIktvLzIE",
+        authDomain: "siva-sai-finance-d9989.firebaseapp.com",
+        databaseURL: "https://siva-sai-finance-d9989-default-rtdb.firebaseio.com",
+        projectId: "siva-sai-finance-d9989",
+        storageBucket: "siva-sai-finance-d9989.firebasestorage.app",
+        messagingSenderId: "483773730142",
+        appId: "1:483773730142:web:87b807ec0da903763ed3cf"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
     let currentEmployeeHp = "";
     let employeeLocation = "Location not captured";
+    let currentCustomerData = null;
 
     function showSection(sectionId) {
         document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
@@ -104,7 +120,7 @@
     }
 
     function handleLogin() {
-        let hp = document.getElementById('loginHpNumber').value.trim();
+        let hp = document.getElementById('loginHpNumber').value.trim().toUpperCase();
         if(hp === "") {
             alert("Dhayachesi HP Number enter cheyyandi");
             return;
@@ -114,19 +130,27 @@
             showSection('adminSection');
             showAdminView('verify');
         } else {
-            if(customersData[hp]) {
-                currentEmployeeHp = hp;
-                showSection('employeeSection');
-                displayEmployeeData(hp);
-                captureLocation(); 
-            } else {
-                alert("Ee HP Number tho data ledhu. Admin mundu 'Customer Verify' lo data add cheyyali.");
-            }
+            // Check Firebase for HP Number
+            db.ref('customers/' + hp).once('value').then((snapshot) => {
+                if (snapshot.exists()) {
+                    currentEmployeeHp = hp;
+                    currentCustomerData = snapshot.val();
+                    showSection('employeeSection');
+                    displayEmployeeData(currentCustomerData);
+                    captureLocation(); 
+                } else {
+                    alert("Ee HP Number tho data ledhu. Admin mundu 'Customer Verify' lo data add cheyyali.");
+                }
+            }).catch((error) => {
+                alert("Database error vachindi: " + error.message);
+            });
         }
     }
 
     function logout() {
         document.getElementById('loginHpNumber').value = "";
+        currentEmployeeHp = "";
+        currentCustomerData = null;
         showSection('loginSection');
     }
 
@@ -142,10 +166,10 @@
     }
 
     function submitAdminData() {
-        let hp = document.getElementById('c_hp').value.trim();
+        let hp = document.getElementById('c_hp').value.trim().toUpperCase();
         if(!hp) { alert("HP Number compulsory ga ivvali!"); return; }
 
-        customersData[hp] = {
+        let customerObj = {
             name: document.getElementById('c_name').value,
             hpNumber: hp,
             vehicleNumber: document.getElementById('c_vNum').value,
@@ -160,35 +184,50 @@
             location: "-"
         };
 
-        localStorage.setItem('svp_finance_data', JSON.stringify(customersData));
-        alert("Customer details submit ayyayi! Ippudu employee ade HP number tho login ayyi chudochu.");
-
-        document.querySelectorAll('#customerVerifyDiv input, #customerVerifyDiv textarea').forEach(input => input.value = '');
+        // Save to Firebase Database
+        db.ref('customers/' + hp).set(customerObj)
+        .then(() => {
+            alert("Customer details submit ayyayi! Ippudu employee ade HP number tho login ayyi chudochu.");
+            document.querySelectorAll('#customerVerifyDiv input, #customerVerifyDiv textarea').forEach(input => input.value = '');
+        })
+        .catch((error) => {
+            alert("Data submit avvaledu. Error: " + error.message);
+        });
     }
 
     function generateReports() {
-        let html = `<table><tr>
-            <th>HP No</th><th>Name</th><th>Vehicle</th><th>Pending Amt</th><th style="color:red;">Important</th><th>Settlement?</th><th>Expected</th><th>Location</th>
-        </tr>`;
-        for(let key in customersData) {
-            let c = customersData[key];
-            html += `<tr>
-                <td>${c.hpNumber}</td>
-                <td>${c.name}</td>
-                <td>${c.vehicleName} (${c.vehicleNumber})</td>
-                <td>₹${c.pendingAmount}</td>
-                <td style="color:red; font-weight:bold;">${c.importantNote}</td>
-                <td>${c.settlementWanted}</td>
-                <td>${c.expectedAmount}</td>
-                <td><a href="http://www.google.com/maps?q=${c.location}" target="_blank">View Map</a></td>
-            </tr>`;
-        }
-        html += `</table>`;
-        document.getElementById('reportsContainer').innerHTML = html;
+        db.ref('customers').once('value').then((snapshot) => {
+            if (snapshot.exists()) {
+                let customersData = snapshot.val();
+                let html = `<table><tr>
+                    <th>HP No</th><th>Name</th><th>Vehicle</th><th>Pending Amt</th><th style="color:red;">Important</th><th>Settlement?</th><th>Expected</th><th>Location</th>
+                </tr>`;
+                
+                for(let key in customersData) {
+                    let c = customersData[key];
+                    let mapLink = c.location !== "-" ? `http://googleusercontent.com/maps.google.com/?q=${c.location}` : "#";
+                    let mapText = c.location !== "-" ? "View Map" : "No Location";
+
+                    html += `<tr>
+                        <td>${c.hpNumber}</td>
+                        <td>${c.name}</td>
+                        <td>${c.vehicleName} <br> (${c.vehicleNumber})</td>
+                        <td>₹${c.pendingAmount}</td>
+                        <td style="color:red; font-weight:bold;">${c.importantNote}</td>
+                        <td>${c.settlementWanted}</td>
+                        <td>${c.expectedAmount}</td>
+                        <td><a href="${mapLink}" target="_blank">${mapText}</a></td>
+                    </tr>`;
+                }
+                html += `</table>`;
+                document.getElementById('reportsContainer').innerHTML = html;
+            } else {
+                document.getElementById('reportsContainer').innerHTML = "<p>Data emi ledu. Mundhu Customer Verify lo data add cheyyandi.</p>";
+            }
+        });
     }
 
-    function displayEmployeeData(hp) {
-        let c = customersData[hp];
+    function displayEmployeeData(c) {
         let html = `
             <p><strong>Name:</strong> ${c.name}</p>
             <p><strong>HP Number:</strong> ${c.hpNumber}</p>
@@ -216,7 +255,7 @@
                 locStatus.style.color = "green";
             }, function(error) {
                 employeeLocation = "Location Capture Failed";
-                locStatus.innerText = "Location Error: GPS on cheyyandi.";
+                locStatus.innerText = "Location Error: GPS on cheyyandi leda permission ivvandi.";
                 locStatus.style.color = "red";
             });
         } else {
@@ -243,13 +282,17 @@
 
         let expected = settlement === 'Yes' ? document.getElementById('e_expectedAmt').value : "Not Applicable";
 
-        customersData[currentEmployeeHp].settlementWanted = settlement;
-        customersData[currentEmployeeHp].expectedAmount = expected;
-        customersData[currentEmployeeHp].location = employeeLocation;
-
-        localStorage.setItem('svp_finance_data', JSON.stringify(customersData));
-        alert("Visit details Admin reports loki submit ayyayi!");
-        logout();
+        // Update ONLY the specific employee's visit details
+        db.ref('customers/' + currentEmployeeHp).update({
+            settlementWanted: settlement,
+            expectedAmount: expected,
+            location: employeeLocation
+        }).then(() => {
+            alert("Visit details Admin reports loki submit ayyayi!");
+            logout();
+        }).catch((error) => {
+            alert("Submit avvaledu. Error: " + error.message);
+        });
     }
 </script>
 
