@@ -205,7 +205,7 @@
                 
                 for(let key in customersData) {
                     let c = customersData[key];
-                    let mapLink = c.location !== "-" ? `http://googleusercontent.com/maps.google.com/?q=${c.location}` : "#";
+                    let mapLink = c.location !== "-" ? `http://www.google.com/maps?q=${c.location}` : "#";
                     let mapText = c.location !== "-" ? "View Map" : "No Location";
 
                     html += `<tr>
@@ -251,7 +251,7 @@
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(function(position) {
                 employeeLocation = position.coords.latitude + "," + position.coords.longitude;
-                locStatus.innerText = "Location Captured Successfully (Ready to submit)";
+                locStatus.innerText = "Captured Successfully (Ready to submit)";
                 locStatus.style.color = "green";
             }, function(error) {
                 employeeLocation = "Location Capture Failed";
