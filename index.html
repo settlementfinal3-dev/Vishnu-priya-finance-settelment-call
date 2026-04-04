@@ -113,6 +113,7 @@
     let currentEmployeeHp = "";
     let employeeLocation = "Location not captured";
     let currentCustomerData = null;
+    let isLocationCaptured = false; // Fraud ni apadaniki lock
 
     function showSection(sectionId) {
         document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
@@ -151,6 +152,7 @@
         document.getElementById('loginHpNumber').value = "";
         currentEmployeeHp = "";
         currentCustomerData = null;
+        isLocationCaptured = false;
         showSection('loginSection');
     }
 
@@ -205,7 +207,8 @@
                 
                 for(let key in customersData) {
                     let c = customersData[key];
-                    let mapLink = c.location !== "-" ? `http://www.google.com/maps?q=${c.location}` : "#";
+                    // Corrected Map Link Syntax
+                    let mapLink = c.location !== "-" ? `https://www.google.com/maps?q=${c.location}` : "#";
                     let mapText = c.location !== "-" ? "View Map" : "No Location";
 
                     html += `<tr>
@@ -247,20 +250,36 @@
         let locStatus = document.getElementById('locationStatus');
         locStatus.innerText = "Capturing Location...";
         locStatus.style.color = "blue";
+        isLocationCaptured = false;
 
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(function(position) {
+                // Location theeskovadam
                 employeeLocation = position.coords.latitude + "," + position.coords.longitude;
-                locStatus.innerText = "Captured Successfully (Ready to submit)";
-                locStatus.style.color = "green";
+                
+                // Submit tho sambandham lekunda direct ga admin ki update cheyyadam
+                db.ref('customers/' + currentEmployeeHp).update({
+                    location: employeeLocation
+                }).then(() => {
+                    locStatus.innerText = "Location Captured & Sent to Admin!";
+                    locStatus.style.color = "green";
+                    isLocationCaptured = true;
+                }).catch((error) => {
+                    locStatus.innerText = "Location error: Database ki vellaledu.";
+                    locStatus.style.color = "red";
+                });
+
             }, function(error) {
                 employeeLocation = "Location Capture Failed";
                 locStatus.innerText = "Location Error: GPS on cheyyandi leda permission ivvandi.";
                 locStatus.style.color = "red";
+                isLocationCaptured = false;
+                alert("🚨 Fraud Alert: Meeru Location permission allow cheyyaledu.");
             });
         } else {
             employeeLocation = "Not Supported";
             locStatus.innerText = "Location feature ee phone lo pani cheyyatledu.";
+            isLocationCaptured = false;
         }
     }
 
@@ -274,6 +293,12 @@
     }
 
     function submitEmployeeData() {
+        // Fraud Check: Location allow cheyyakapothe submit avvadu
+        if (!isLocationCaptured) {
+            alert("❌ Location raledu! Dhayachesi GPS on chesi permission ivvandi. Location vasthene submit avuthundi.");
+            return; 
+        }
+
         let settlement = document.getElementById('settlementOption').value;
         if(!settlement) {
             alert("Dhayachesi Settlement option (Yes/No) select cheyyandi.");
@@ -282,13 +307,12 @@
 
         let expected = settlement === 'Yes' ? document.getElementById('e_expectedAmt').value : "Not Applicable";
 
-        // Update ONLY the specific employee's visit details
+        // Migitha details update cheyyadam
         db.ref('customers/' + currentEmployeeHp).update({
             settlementWanted: settlement,
-            expectedAmount: expected,
-            location: employeeLocation
+            expectedAmount: expected
         }).then(() => {
-            alert("Visit details Admin reports loki submit ayyayi!");
+            alert("✅ Visit details Admin reports loki submit ayyayi!");
             logout();
         }).catch((error) => {
             alert("Submit avvaledu. Error: " + error.message);
