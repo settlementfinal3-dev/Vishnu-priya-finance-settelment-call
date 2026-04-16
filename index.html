@@ -171,7 +171,6 @@
                     document.getElementById("otpSection").style.display = "block";
                     msg.innerText = "OTP Sent!"; msg.style.color="green";
                 }).catch((error) => { 
-                    // Exact error display
                     msg.innerText = "Error: " + error.message; 
                     msg.style.color="red"; 
                 });
@@ -344,13 +343,19 @@
         }
         function getUserLocation() {
             document.getElementById("locStatus").innerText = "Fetching location...";
-            if (navigator.geolocation) { navigator.geolocation.getCurrentPosition(showPosition, showError); } 
-            else { document.getElementById("locStatus").innerText = "GPS not supported."; }
+            document.getElementById("locStatus").style.color = "#666";
+            if (navigator.geolocation) { 
+                navigator.geolocation.getCurrentPosition(showPosition, showError); 
+            } else { 
+                document.getElementById("locStatus").innerText = "GPS not supported."; 
+                document.getElementById("locStatus").style.color = "red";
+            }
         }
         function showPosition(position) {
             window.customerLat = position.coords.latitude;
             window.customerLng = position.coords.longitude;
             document.getElementById("locStatus").innerText = "Location mapped!";
+            document.getElementById("locStatus").style.color = "green";
             
             const pos = { lat: window.customerLat, lng: window.customerLng };
             if(!map) initMap();
@@ -363,7 +368,25 @@
             window.deliveryFee = Math.ceil(window.distanceInKm) * 10;
             if(window.renderBill) window.renderBill(); // Update bill with new delivery fee
         }
-        function showError() { document.getElementById("locStatus").innerText = "Error: Please turn on GPS."; }
+        function showError(error) { 
+            let msg = "Error: ";
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    msg += "Meeru Chrome lo Location Allow cheyaledu.";
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    msg += "GPS signal dorakatledu. Open place ki velli try cheyandi.";
+                    break;
+                case error.TIMEOUT:
+                    msg += "Location thesukovadaniki chala time pattindi.";
+                    break;
+                default:
+                    msg += "Unknown error vachindi.";
+                    break;
+            }
+            document.getElementById("locStatus").innerText = msg;
+            document.getElementById("locStatus").style.color = "red";
+        }
         function calculateDistance(lat1, lon1, lat2, lon2) {
             const R = 6371; const dLat = (lat2 - lat1) * Math.PI / 180; const dLon = (lon2 - lon1) * Math.PI / 180;
             const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
