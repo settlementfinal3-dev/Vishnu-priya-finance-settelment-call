@@ -3,322 +3,372 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sri Vishnu Priya Finance</title>
+    <title>Foodie - Customer App</title>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px; }
-        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1); }
-        h1 { text-align: center; color: #1a1a1a; font-size: 2.2em; text-transform: uppercase; border-bottom: 2px solid #ccc; padding-bottom: 10px; }
-        .section { display: none; }
-        .active { display: block; }
-        input, button, select, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
-        button { background-color: #28a745; color: white; border: none; cursor: pointer; font-weight: bold; }
-        button:hover { background-color: #218838; }
-        .important-label { color: red; font-weight: bold; font-size: 1.1em; }
-        .important-input { border: 2px solid red; background-color: #fff8f8; }
-        .card { background: #f9f9f9; padding: 15px; margin-bottom: 15px; border-left: 5px solid #007bff; border-radius: 4px; line-height: 1.6; }
-        .btn-nav { background-color: #007bff; margin-bottom: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-        th { background-color: #007bff; color: white; }
-        .logout-btn { background-color: #dc3545; margin-top: 20px; }
-    </style>
+        /* Global Styles */
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
+        .page { display: none; padding-bottom: 80px; } /* Anni pages hide chesi uncham */
+        .page.active { display: block; } /* Active page matrame kanipisthundi */
+        
+        /* Header */
+        .header { background-color: #e23744; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .header h2 { margin: 0; font-size: 20px; }
+        .header-light { background-color: white; color: #333; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .back-btn { font-size: 20px; text-decoration: none; color: #333; margin-right: 15px; cursor: pointer; }
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+        /* Login Page */
+        .login-box { background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0px 4px 10px rgba(0,0,0,0.1); width: 85%; max-width: 400px; margin: 100px auto; text-align: center; }
+        .login-box input { width: 90%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; }
+        .main-btn { width: 100%; padding: 12px; background-color: #e23744; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        #otpSection { display: none; }
+        #recaptcha-container { display: flex; justify-content: center; margin-top: 10px; }
+
+        /* Dashboard Page */
+        .search-container { padding: 15px; background-color: white; border-bottom: 1px solid #ddd; }
+        .search-container input { width: 95%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
+        .restaurant-list { padding: 15px; }
+        .restaurant-card { background-color: white; border-radius: 10px; overflow: hidden; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: pointer; }
+        .restaurant-image { width: 100%; height: 150px; background-color: #ddd; object-fit: cover; }
+        .restaurant-info { padding: 15px; }
+        .restaurant-name { font-size: 18px; font-weight: bold; margin: 0 0 5px 0; }
+        .rating { background-color: #4CAF50; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 12px; }
+
+        /* Menu Page */
+        .menu-container { padding: 15px; }
+        .menu-item { background-color: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .item-details { width: 70%; }
+        .item-name { font-size: 16px; font-weight: bold; margin: 0 0 5px 0; }
+        .add-btn { background-color: white; color: #e23744; border: 1px solid #e23744; padding: 6px 15px; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        .qty-controls { display: none; justify-content: space-between; align-items: center; background-color: #e23744; color: white; border-radius: 5px; }
+        .qty-btn { background: none; border: none; color: white; padding: 5px 10px; font-size: 16px; cursor: pointer; }
+        .floating-cart { position: fixed; bottom: 0; left: 0; width: 100%; background-color: #4CAF50; color: white; padding: 15px 20px; box-sizing: border-box; display: none; justify-content: space-between; z-index: 1000; }
+        .view-cart-btn { background: none; border: none; color: white; font-size: 16px; font-weight: bold; cursor: pointer; }
+
+        /* Cart Page */
+        .box { background-color: white; padding: 15px; border-radius: 10px; margin: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .item-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 15px; }
+        .total-row { display: flex; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 1px dashed #ccc; font-weight: bold; font-size: 18px; }
+        textarea { width: 90%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; resize: none; margin-bottom: 10px; }
+        #map { width: 100%; height: 200px; border-radius: 5px; background-color: #eaeaea; margin-bottom: 10px; }
+        .loc-btn { background-color: #4CAF50; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; }
+        .footer-bar { position: fixed; bottom: 0; left: 0; width: 100%; background-color: white; padding: 15px; box-sizing: border-box; box-shadow: 0 -2px 5px rgba(0,0,0,0.1); }
+    </style>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap"></script>
 </head>
 <body>
 
-<div class="container">
-    <h1>Sri Vishnu Priya Finance</h1>
-
-    <div id="loginSection" class="section active">
-        <h3>Login</h3>
-        <label>Enter HP Number:</label>
-        <input type="text" id="loginHpNumber" placeholder="Enter HP Number">
-        <button onclick="handleLogin()">Login</button>
-    </div>
-
-    <div id="adminSection" class="section">
-        <h3>Admin Dashboard</h3>
-        <div style="display: flex; gap: 10px;">
-            <button class="btn-nav" onclick="showAdminView('verify')">Customer Verify</button>
-            <button class="btn-nav" onclick="showAdminView('reports')">Reports</button>
-        </div>
-        
-        <div id="customerVerifyDiv">
-            <h4>Customer Verify (Add Data)</h4>
-            <input type="text" id="c_name" placeholder="Customer Name">
-            <input type="text" id="c_hp" placeholder="HP Number (Assign to Employee)">
-            <input type="text" id="c_vNum" placeholder="Vehicle Number">
-            <input type="text" id="c_vName" placeholder="Vehicle Name">
-            <input type="text" id="c_vYear" placeholder="Vehicle Registration Year">
-            <input type="number" id="c_emiAmt" placeholder="EMI Amount">
-            <input type="number" id="c_pendingEmis" placeholder="Pending EMIs">
-            <input type="number" id="c_pendingAmt" placeholder="Pending Amount">
-
-            <label class="important-label">Important:</label>
-            <textarea id="c_important" class="important-input" rows="3" placeholder="Type important notes here..."></textarea>
-
-            <button onclick="submitAdminData()">Submit Data</button>
-        </div>
-
-        <div id="reportsDiv" style="display:none;">
-            <h4>Admin Reports</h4>
-            <div id="reportsContainer" style="overflow-x: auto;">Loading reports...</div>
-        </div>
-        
-        <button class="logout-btn" onclick="logout()">Logout</button>
-    </div>
-
-    <div id="employeeSection" class="section">
-        <h3>Customer Details</h3>
-        <div id="employeeDataDisplay" class="card"></div>
-
-        <div id="locationStatus" style="color: blue; margin-bottom: 15px; font-weight: bold;">Capturing Location...</div>
-
-        <div style="background: #e9ecef; padding: 15px; border-radius: 5px;">
-            <label style="font-weight: bold;">Meeru settlement chesukovali anukuntunara?</label>
-            <select id="settlementOption" onchange="toggleSettlementAmount()">
-                <option value="">Select Option</option>
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
-            </select>
-
-            <div id="expectedAmountDiv" style="display:none; margin-top: 10px;">
-                <label style="font-weight: bold;">Entha expect chesthunaru?</label>
-                <input type="number" id="e_expectedAmt" placeholder="Enter Expected Amount">
+    <div id="loginPage" class="page active">
+        <div class="login-box">
+            <h2 style="color: #e23744;">Foodie</h2>
+            <p>Login or Signup to continue</p>
+            <div id="phoneSection">
+                <input type="tel" id="phoneNumber" placeholder="+91 9876543210" required>
+                <div id="recaptcha-container"></div>
+                <button class="main-btn" onclick="sendOTP()">Send OTP</button>
             </div>
-
-            <button onclick="submitEmployeeData()" style="margin-top: 15px;">Submit Visit Details</button>
+            <div id="otpSection">
+                <input type="number" id="otpCode" placeholder="Enter 6-digit OTP" required>
+                <button class="main-btn" onclick="verifyOTP()">Verify & Login</button>
+            </div>
+            <div id="loginMessage" style="margin-top:15px; font-size:14px;"></div>
         </div>
-        
-        <button class="logout-btn" onclick="logout()">Logout</button>
     </div>
-</div>
 
-<script>
-    // 1. Initialize Firebase
-    const firebaseConfig = {
-        apiKey: "AIzaSyBv_XDEWTVp6vUZIMppxaj-0TuIktvLzIE",
-        authDomain: "siva-sai-finance-d9989.firebaseapp.com",
-        databaseURL: "https://siva-sai-finance-d9989-default-rtdb.firebaseio.com",
-        projectId: "siva-sai-finance-d9989",
-        storageBucket: "siva-sai-finance-d9989.firebasestorage.app",
-        messagingSenderId: "483773730142",
-        appId: "1:483773730142:web:87b807ec0da903763ed3cf"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    <div id="dashboardPage" class="page">
+        <div class="header">
+            <h2>Foodie</h2>
+            <div style="background:white; color:#e23744; width:30px; height:30px; border-radius:50%; display:flex; justify-content:center; align-items:center; font-weight:bold;">R</div>
+        </div>
+        <div class="search-container">
+            <input type="text" placeholder="Search for restaurants...">
+        </div>
+        <div class="restaurant-list" id="restaurantsContainer"></div>
+    </div>
 
-    let currentEmployeeHp = "";
-    let employeeLocation = "Location not captured";
-    let currentCustomerData = null;
-    let isLocationCaptured = false; // Fraud ni apadaniki lock
+    <div id="menuPage" class="page">
+        <div class="header header-light">
+            <span class="back-btn" onclick="showPage('dashboardPage')">⬅</span>
+            <h2 id="restNameHeader" style="margin:0; font-size:18px; color:#333;">Restaurant Menu</h2>
+        </div>
+        <div class="menu-container" id="menuList"></div>
+        <div class="floating-cart" id="floatingCart">
+            <div id="cartSummary" style="font-weight:bold;"></div>
+            <button class="view-cart-btn" onclick="goToCart()">View Cart ➡</button>
+        </div>
+    </div>
 
-    function showSection(sectionId) {
-        document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
-        document.getElementById(sectionId).classList.add('active');
-    }
+    <div id="cartPage" class="page">
+        <div class="header header-light">
+            <span class="back-btn" onclick="showPage('menuPage')">⬅</span>
+            <h2 style="margin:0; font-size:18px; color:#333;">Cart & Checkout</h2>
+        </div>
+        <div class="box">
+            <h3 style="margin-top:0;">Delivery Location</h3>
+            <button class="loc-btn" onclick="getUserLocation()">📍 Get My Location</button>
+            <p id="locStatus" style="font-size: 12px; color: #666;"></p>
+            <div id="map">Map will load here...</div>
+            <textarea id="deliveryAddress" rows="2" placeholder="House No, Landmark, City..." required></textarea>
+        </div>
+        <div class="box" id="billDetails"></div>
+        <div id="orderMessage" style="text-align:center; font-weight:bold; margin-bottom:80px;"></div>
+        <div class="footer-bar">
+            <button class="main-btn" id="placeOrderBtn" onclick="placeOrder()">PLACE ORDER</button>
+        </div>
+    </div>
 
-    function handleLogin() {
-        let hp = document.getElementById('loginHpNumber').value.trim().toUpperCase();
-        if(hp === "") {
-            alert("Dhayachesi HP Number enter cheyyandi");
-            return;
-        }
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
+        import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 
-        if(hp === "00001") {
-            showSection('adminSection');
-            showAdminView('verify');
-        } else {
-            // Check Firebase for HP Number
-            db.ref('customers/' + hp).once('value').then((snapshot) => {
-                if (snapshot.exists()) {
-                    currentEmployeeHp = hp;
-                    currentCustomerData = snapshot.val();
-                    showSection('employeeSection');
-                    displayEmployeeData(currentCustomerData);
-                    captureLocation(); 
-                } else {
-                    alert("Ee HP Number tho data ledhu. Admin mundu 'Customer Verify' lo data add cheyyali.");
-                }
-            }).catch((error) => {
-                alert("Database error vachindi: " + error.message);
-            });
-        }
-    }
-
-    function logout() {
-        document.getElementById('loginHpNumber').value = "";
-        currentEmployeeHp = "";
-        currentCustomerData = null;
-        isLocationCaptured = false;
-        showSection('loginSection');
-    }
-
-    function showAdminView(view) {
-        if(view === 'verify') {
-            document.getElementById('customerVerifyDiv').style.display = 'block';
-            document.getElementById('reportsDiv').style.display = 'none';
-        } else {
-            document.getElementById('customerVerifyDiv').style.display = 'none';
-            document.getElementById('reportsDiv').style.display = 'block';
-            generateReports();
-        }
-    }
-
-    function submitAdminData() {
-        let hp = document.getElementById('c_hp').value.trim().toUpperCase();
-        if(!hp) { alert("HP Number compulsory ga ivvali!"); return; }
-
-        let customerObj = {
-            name: document.getElementById('c_name').value,
-            hpNumber: hp,
-            vehicleNumber: document.getElementById('c_vNum').value,
-            vehicleName: document.getElementById('c_vName').value,
-            vehicleYear: document.getElementById('c_vYear').value,
-            emiAmount: document.getElementById('c_emiAmt').value,
-            pendingEmis: document.getElementById('c_pendingEmis').value,
-            pendingAmount: document.getElementById('c_pendingAmt').value,
-            importantNote: document.getElementById('c_important').value,
-            settlementWanted: "Pending",
-            expectedAmount: "-",
-            location: "-"
+        const firebaseConfig = {
+          apiKey: "AIzaSyAvjFcKKiu4OMmQckYXMTejdBJh9tC6TjM",
+          authDomain: "sri-vishnu-priya-finance-c591f.firebaseapp.com",
+          databaseURL: "https://sri-vishnu-priya-finance-c591f-default-rtdb.firebaseio.com",
+          projectId: "sri-vishnu-priya-finance-c591f",
+          storageBucket: "sri-vishnu-priya-finance-c591f.firebasestorage.app",
+          messagingSenderId: "184676228358",
+          appId: "1:184676228358:web:572d934fd04e8d8ddfd287"
         };
 
-        // Save to Firebase Database
-        db.ref('customers/' + hp).set(customerObj)
-        .then(() => {
-            alert("Customer details submit ayyayi! Ippudu employee ade HP number tho login ayyi chudochu.");
-            document.querySelectorAll('#customerVerifyDiv input, #customerVerifyDiv textarea').forEach(input => input.value = '');
-        })
-        .catch((error) => {
-            alert("Data submit avvaledu. Error: " + error.message);
-        });
-    }
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
 
-    function generateReports() {
-        db.ref('customers').once('value').then((snapshot) => {
-            if (snapshot.exists()) {
-                let customersData = snapshot.val();
-                let html = `<table><tr>
-                    <th>HP No</th><th>Name</th><th>Vehicle</th><th>Pending Amt</th><th style="color:red;">Important</th><th>Settlement?</th><th>Expected</th><th>Location</th>
-                </tr>`;
-                
-                for(let key in customersData) {
-                    let c = customersData[key];
-                    // Corrected Map Link Syntax
-                    let mapLink = c.location !== "-" ? `https://www.google.com/maps?q=${c.location}` : "#";
-                    let mapText = c.location !== "-" ? "View Map" : "No Location";
+        // Global State Variables
+        window.cart = {};
+        window.totalItems = 0;
+        window.totalPrice = 0;
+        window.distanceInKm = 0;
+        window.deliveryFee = 0;
+        window.customerLat = null;
+        window.customerLng = null;
+        window.orderItemsForDB = [];
 
-                    html += `<tr>
-                        <td>${c.hpNumber}</td>
-                        <td>${c.name}</td>
-                        <td>${c.vehicleName} <br> (${c.vehicleNumber})</td>
-                        <td>₹${c.pendingAmount}</td>
-                        <td style="color:red; font-weight:bold;">${c.importantNote}</td>
-                        <td>${c.settlementWanted}</td>
-                        <td>${c.expectedAmount}</td>
-                        <td><a href="${mapLink}" target="_blank">${mapText}</a></td>
-                    </tr>`;
-                }
-                html += `</table>`;
-                document.getElementById('reportsContainer').innerHTML = html;
-            } else {
-                document.getElementById('reportsContainer').innerHTML = "<p>Data emi ledu. Mundhu Customer Verify lo data add cheyyandi.</p>";
-            }
-        });
-    }
+        // App Navigation
+        window.showPage = function(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            window.scrollTo(0,0);
+        };
 
-    function displayEmployeeData(c) {
-        let html = `
-            <p><strong>Name:</strong> ${c.name}</p>
-            <p><strong>HP Number:</strong> ${c.hpNumber}</p>
-            <p><strong>Vehicle:</strong> ${c.vehicleName} - ${c.vehicleNumber} (Year: ${c.vehicleYear})</p>
-            <p><strong>EMI Amount:</strong> ₹${c.emiAmount}</p>
-            <p><strong>Pending EMIs:</strong> ${c.pendingEmis}</p>
-            <p><strong>Pending Amount:</strong> ₹${c.pendingAmount}</p>
-            <p class="important-label">🚨 Important: ${c.importantNote}</p>
-        `;
-        document.getElementById('employeeDataDisplay').innerHTML = html;
-        document.getElementById('settlementOption').value = "";
-        document.getElementById('e_expectedAmt').value = "";
-        document.getElementById('expectedAmountDiv').style.display = 'none';
-    }
+        // --- 1. LOGIN LOGIC ---
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { 'size': 'normal' });
 
-    function captureLocation() {
-        let locStatus = document.getElementById('locationStatus');
-        locStatus.innerText = "Capturing Location...";
-        locStatus.style.color = "blue";
-        isLocationCaptured = false;
+        window.sendOTP = function() {
+            const phone = document.getElementById("phoneNumber").value;
+            const msg = document.getElementById("loginMessage");
+            if(phone.length < 10) { msg.innerText = "Enter valid number (+91...)"; msg.style.color="red"; return; }
+            
+            // Loading message
+            msg.innerText = "Sending OTP... Please wait."; 
+            msg.style.color="blue";
 
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(function(position) {
-                // Location theeskovadam
-                employeeLocation = position.coords.latitude + "," + position.coords.longitude;
-                
-                // Submit tho sambandham lekunda direct ga admin ki update cheyyadam
-                db.ref('customers/' + currentEmployeeHp).update({
-                    location: employeeLocation
-                }).then(() => {
-                    locStatus.innerText = "Location Captured & Sent to Admin!";
-                    locStatus.style.color = "green";
-                    isLocationCaptured = true;
-                }).catch((error) => {
-                    locStatus.innerText = "Location error: Database ki vellaledu.";
-                    locStatus.style.color = "red";
+            signInWithPhoneNumber(auth, phone, window.recaptchaVerifier)
+                .then((result) => {
+                    window.confirmationResult = result;
+                    document.getElementById("phoneSection").style.display = "none";
+                    document.getElementById("otpSection").style.display = "block";
+                    msg.innerText = "OTP Sent!"; msg.style.color="green";
+                }).catch((error) => { 
+                    // Exact error display
+                    msg.innerText = "Error: " + error.message; 
+                    msg.style.color="red"; 
                 });
+        };
 
-            }, function(error) {
-                employeeLocation = "Location Capture Failed";
-                locStatus.innerText = "Location Error: GPS on cheyyandi leda permission ivvandi.";
-                locStatus.style.color = "red";
-                isLocationCaptured = false;
-                alert("🚨 Fraud Alert: Meeru Location permission allow cheyyaledu.");
+        window.verifyOTP = function() {
+            const code = document.getElementById("otpCode").value;
+            const msg = document.getElementById("loginMessage");
+            window.confirmationResult.confirm(code).then((result) => {
+                showPage('dashboardPage');
+                loadRestaurants();
+            }).catch((error) => { msg.innerText = "Invalid OTP"; msg.style.color="red"; });
+        };
+
+        // --- 2. DASHBOARD LOGIC ---
+        const restaurants = [
+            { id: 1, name: "Sri Kanya Biryani", cuisine: "Biryani, South Indian", rating: "4.5", img: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+            { id: 2, name: "Bawarchi Restaurant", cuisine: "Mughlai, North Indian", rating: "4.2", img: "https://images.unsplash.com/photo-1588166524941-3bf61a9c41db?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" }
+        ];
+
+        window.loadRestaurants = function() {
+            let html = '';
+            restaurants.forEach(r => {
+                html += `<div class="restaurant-card" onclick="openRestaurant(${r.id}, '${r.name}')">
+                    <img src="${r.img}" class="restaurant-image">
+                    <div class="restaurant-info">
+                        <h3 class="restaurant-name">${r.name}</h3>
+                        <div style="display:flex; justify-content:space-between; color:#666; font-size:14px;">
+                            <span>${r.cuisine}</span> <span class="rating">⭐ ${r.rating}</span>
+                        </div>
+                    </div>
+                </div>`;
             });
-        } else {
-            employeeLocation = "Not Supported";
-            locStatus.innerText = "Location feature ee phone lo pani cheyyatledu.";
-            isLocationCaptured = false;
+            document.getElementById('restaurantsContainer').innerHTML = html;
+        };
+
+        // --- 3. MENU LOGIC ---
+        window.menuData = [
+            { id: 101, name: "Chicken Dum Biryani", price: 250 },
+            { id: 102, name: "Mutton Biryani", price: 350 },
+            { id: 103, name: "Chicken 65", price: 180 }
+        ];
+
+        window.openRestaurant = function(id, name) {
+            document.getElementById('restNameHeader').innerText = name;
+            window.cart = {}; // Reset cart for new restaurant
+            updateCartUI();
+            
+            let html = '';
+            window.menuData.forEach(item => {
+                html += `<div class="menu-item">
+                    <div class="item-details">
+                        <h3 class="item-name">${item.name}</h3>
+                        <div style="color:#666; font-size:15px;">₹${item.price}</div>
+                    </div>
+                    <div style="width:25%; text-align:right;">
+                        <button class="add-btn" id="addBtn_${item.id}" onclick="addItem(${item.id})">ADD</button>
+                        <div class="qty-controls" id="qtyCtrl_${item.id}">
+                            <button class="qty-btn" onclick="updateQty(${item.id}, -1)">-</button>
+                            <span id="qty_${item.id}">1</span>
+                            <button class="qty-btn" onclick="updateQty(${item.id}, 1)">+</button>
+                        </div>
+                    </div>
+                </div>`;
+            });
+            document.getElementById('menuList').innerHTML = html;
+            showPage('menuPage');
+        };
+
+        window.addItem = function(id) {
+            document.getElementById(`addBtn_${id}`).style.display = 'none';
+            document.getElementById(`qtyCtrl_${id}`).style.display = 'flex';
+            window.cart[id] = 1;
+            updateCartUI();
+        };
+
+        window.updateQty = function(id, change) {
+            window.cart[id] += change;
+            if (window.cart[id] <= 0) {
+                delete window.cart[id];
+                document.getElementById(`addBtn_${id}`).style.display = 'block';
+                document.getElementById(`qtyCtrl_${id}`).style.display = 'none';
+            } else {
+                document.getElementById(`qty_${id}`).innerText = window.cart[id];
+            }
+            updateCartUI();
+        };
+
+        window.updateCartUI = function() {
+            window.totalItems = 0; window.totalPrice = 0;
+            for (let id in window.cart) {
+                window.totalItems += window.cart[id];
+                let item = window.menuData.find(i => i.id == id);
+                window.totalPrice += (item.price * window.cart[id]);
+            }
+            const cartBar = document.getElementById('floatingCart');
+            if (window.totalItems > 0) {
+                cartBar.style.display = 'flex';
+                document.getElementById('cartSummary').innerText = `${window.totalItems} Item(s) | ₹${window.totalPrice}`;
+            } else { cartBar.style.display = 'none'; }
+        };
+
+        // --- 4. CART & CHECKOUT LOGIC ---
+        window.goToCart = function() {
+            showPage('cartPage');
+            renderBill();
+        };
+
+        window.renderBill = function() {
+            window.orderItemsForDB = [];
+            let html = '';
+            for (let id in window.cart) {
+                let qty = window.cart[id];
+                let item = window.menuData.find(i => i.id == id);
+                let itemTot = item.price * qty;
+                window.orderItemsForDB.push({ id: item.id, name: item.name, qty: qty, price: item.price });
+                html += `<div class="item-row"><span>${item.name} (x${qty})</span><span>₹${itemTot}</span></div>`;
+            }
+            let finalTot = window.totalPrice + window.deliveryFee;
+            html += `<div class="item-row" style="color:#666; margin-top:10px;">
+                        <span>Delivery Fee (${window.distanceInKm.toFixed(1)} km)</span>
+                        <span id="delFeeDisplay">₹${window.deliveryFee}</span>
+                     </div>
+                     <div class="total-row"><span>Grand Total</span><span>₹${finalTot}</span></div>`;
+            document.getElementById('billDetails').innerHTML = html;
+        };
+
+        window.placeOrder = async function() {
+            const address = document.getElementById('deliveryAddress').value;
+            const msg = document.getElementById('orderMessage');
+            if (address.trim() === "" || window.customerLat === null) {
+                msg.innerText = "Please get location & enter address!"; msg.style.color="red"; return;
+            }
+            
+            document.getElementById('placeOrderBtn').innerText = "PROCESSING...";
+            document.getElementById('placeOrderBtn').disabled = true;
+
+            try {
+                await addDoc(collection(db, "orders"), {
+                    items: window.orderItemsForDB,
+                    foodTotal: window.totalPrice,
+                    deliveryFee: window.deliveryFee,
+                    totalAmount: window.totalPrice + window.deliveryFee,
+                    address: address,
+                    location: { lat: window.customerLat, lng: window.customerLng },
+                    status: "Pending",
+                    timestamp: serverTimestamp(),
+                    customerId: document.getElementById("phoneNumber").value
+                });
+                msg.innerText = "Order Placed! 🎉"; msg.style.color="green";
+                setTimeout(() => { 
+                    msg.innerText = "";
+                    document.getElementById('placeOrderBtn').innerText = "PLACE ORDER";
+                    document.getElementById('placeOrderBtn').disabled = false;
+                    document.getElementById('deliveryAddress').value = "";
+                    showPage('dashboardPage'); 
+                }, 3000);
+            } catch (e) {
+                msg.innerText = "Failed to place order."; msg.style.color="red";
+                document.getElementById('placeOrderBtn').innerText = "PLACE ORDER";
+                document.getElementById('placeOrderBtn').disabled = false;
+            }
+        };
+    </script>
+
+    <script>
+        let map; let marker;
+        function initMap() {
+            map = new google.maps.Map(document.getElementById("map"), { center: { lat: 16.0560, lng: 79.7423 }, zoom: 12 });
         }
-    }
-
-    function toggleSettlementAmount() {
-        let opt = document.getElementById('settlementOption').value;
-        if(opt === 'Yes') {
-            document.getElementById('expectedAmountDiv').style.display = 'block';
-        } else {
-            document.getElementById('expectedAmountDiv').style.display = 'none';
+        function getUserLocation() {
+            document.getElementById("locStatus").innerText = "Fetching location...";
+            if (navigator.geolocation) { navigator.geolocation.getCurrentPosition(showPosition, showError); } 
+            else { document.getElementById("locStatus").innerText = "GPS not supported."; }
         }
-    }
+        function showPosition(position) {
+            window.customerLat = position.coords.latitude;
+            window.customerLng = position.coords.longitude;
+            document.getElementById("locStatus").innerText = "Location mapped!";
+            
+            const pos = { lat: window.customerLat, lng: window.customerLng };
+            if(!map) initMap();
+            map.setCenter(pos); map.setZoom(15);
+            if(marker) marker.setMap(null);
+            marker = new google.maps.Marker({ position: pos, map: map });
 
-    function submitEmployeeData() {
-        // Fraud Check: Location allow cheyyakapothe submit avvadu
-        if (!isLocationCaptured) {
-            alert("❌ Location raledu! Dhayachesi GPS on chesi permission ivvandi. Location vasthene submit avuthundi.");
-            return; 
+            // Distance calculation logic
+            window.distanceInKm = calculateDistance(window.customerLat, window.customerLng, 16.0560, 79.7423);
+            window.deliveryFee = Math.ceil(window.distanceInKm) * 10;
+            if(window.renderBill) window.renderBill(); // Update bill with new delivery fee
         }
-
-        let settlement = document.getElementById('settlementOption').value;
-        if(!settlement) {
-            alert("Dhayachesi Settlement option (Yes/No) select cheyyandi.");
-            return;
+        function showError() { document.getElementById("locStatus").innerText = "Error: Please turn on GPS."; }
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; const dLat = (lat2 - lat1) * Math.PI / 180; const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+            return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
         }
-
-        let expected = settlement === 'Yes' ? document.getElementById('e_expectedAmt').value : "Not Applicable";
-
-        // Migitha details update cheyyadam
-        db.ref('customers/' + currentEmployeeHp).update({
-            settlementWanted: settlement,
-            expectedAmount: expected
-        }).then(() => {
-            alert("✅ Visit details Admin reports loki submit ayyayi!");
-            logout();
-        }).catch((error) => {
-            alert("Submit avvaledu. Error: " + error.message);
-        });
-    }
-</script>
-
+    </script>
 </body>
 </html>
